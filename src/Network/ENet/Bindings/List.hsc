@@ -3,7 +3,6 @@ module Network.ENet.Bindings.List where
 
 import Foreign
 import Foreign.Storable()
-import Foreign.C.Types
 
 #include "enet/enet.h"
 

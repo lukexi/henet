@@ -2,17 +2,12 @@
 module Network.ENet.Bindings where
 
 import Foreign
-import Foreign.Storable
 import Foreign.C.Types
 import Foreign.C.String
 
-import Network.Socket( SockAddr(SockAddrInet)
-                     , HostAddress)
-import Network.Socket.Internal(PortNumber(PortNum))
+import Network.Socket(HostAddress)
 
 import Network.ENet.Bindings.System
---import Network.ENet.Bindings.Protocol
-import Network.ENet.Bindings.List
 import Network.ENet.Bindings.Callbacks
 
 #include "enet/enet.h"
@@ -33,6 +28,7 @@ instance Enum SocketType where
   fromEnum Datagram = 2
   toEnum 1 = Stream
   toEnum 2 = Datagram
+  toEnum _ = Datagram 
 
 instance Storable SocketType where
   sizeOf    _ = (#size ENetSocketType)
@@ -60,6 +56,7 @@ instance Enum SocketOption where
   fromEnum ReuseAddress   = 5
   fromEnum ReceiveTimeIs0 = 6
   fromEnum SendTimeIs0    = 7
+  fromEnum Error          = 8
   toEnum 1 = NonBlock
   toEnum 2 = Broadcast
   toEnum 3 = ReceiveBuffer
@@ -67,6 +64,7 @@ instance Enum SocketOption where
   toEnum 5 = ReuseAddress
   toEnum 6 = ReceiveTimeIs0
   toEnum 7 = SendTimeIs0
+  toEnum _ = Error
 
 instance Storable SocketOption where
   sizeOf    _ = (#size ENetSocketOption)
@@ -102,13 +100,26 @@ data PacketFlag = Reliable
                 | Unsequenced
                 | NoAllocate
                 | UnreliableFragment
-                | PF_Unused_1
-                | PF_Unused_2
-                | PF_Unused_3
-                | PF_Unused_4
                 | IsSent
-                deriving (Show, Eq, Enum) -- safe because used in bitset
+                | PacketFlagUnknown
+                deriving (Show, Eq)
 
+-- | Used in creation of flag set
+instance Enum PacketFlag where 
+  fromEnum f = case f of 
+    Reliable -> 1
+    Unsequenced -> 2
+    NoAllocate -> 4
+    UnreliableFragment -> 8
+    IsSent -> 256
+    PacketFlagUnknown -> 0
+  toEnum i = case i of 
+    1 -> Reliable
+    2 -> Unsequenced
+    4 -> NoAllocate
+    8 -> UnreliableFragment
+    256 -> IsSent
+    _ -> PacketFlagUnknown
 ------
 
 -- Opaque/Abstract types, cause I am lazy
@@ -136,6 +147,7 @@ instance Storable EventType where
 
 ------
 
+-- | Wrapper for channel index
 newtype ChannelID = ChannelID Word8
                   deriving (Show, Eq, Storable)
 
@@ -143,7 +155,7 @@ data Event = Event
              EventType
              (Ptr Peer)
              ChannelID
-             Word32 -- | event data
+             Word32 -- event data
              (Ptr Packet)
 
 instance Storable Event where

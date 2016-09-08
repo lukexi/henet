@@ -3,7 +3,6 @@ module Network.ENet.Bindings.System where
 -- wraps both win32.h and unix.h with opaque types
 
 import Foreign
-import Foreign.Storable
 import Foreign.C.Types
 
 #include "enet/enet.h"

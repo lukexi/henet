@@ -2,11 +2,7 @@ module Network.ENet.Peer where
 
 import Foreign
 import Foreign.C.Error
-import Foreign.C.Types
 
-import Network.Socket(SockAddr)
-
-import Network.ENet.Internal
 import qualified Network.ENet.Bindings as B
 
 send :: Ptr B.Peer -> B.ChannelID -> Ptr B.Packet -> IO ()

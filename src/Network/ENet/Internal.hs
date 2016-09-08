@@ -11,12 +11,13 @@ import Data.Endian.Unsafe( unsafeUnwrapBigEndian
 import Network.ENet.Bindings
 
 toENetAddress :: SockAddr -> Address
-toENetAddress (SockAddrInet (PortNum port) ip) =
-  Address ip $ fromBigEndian $ unsafeAssertBigEndian port
+toENetAddress (SockAddrInet port ip) =
+  Address ip $ fromBigEndian $ unsafeAssertBigEndian $ fromIntegral port
+toENetAddress _ = error "Unsupported enet address!"
 
 toSockAddr :: Address -> SockAddr
 toSockAddr (Address ip port) =
-  SockAddrInet (PortNum $ unsafeUnwrapBigEndian $ toBigEndian $ port) ip
+  SockAddrInet (fromIntegral $ unsafeUnwrapBigEndian $ toBigEndian $ port) ip
 
 withMaybeDo :: Storable a => Maybe a -> (Ptr a -> IO b) -> IO b
 withMaybeDo (Just val) f = alloca $ \ptr -> poke ptr val >> f ptr
