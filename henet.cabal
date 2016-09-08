@@ -54,18 +54,29 @@ Source-repository head
   type:               git
   location:           git://github.com/Ericson2314/henet.git
 
---Test-suite henet-test
---  default-language:   Haskell98
---  type:               exitcode-stdio-1.0
---  ghc-options:        -Wall
---  main-is:            Main.hs
---  hs-source-dirs:     test
---  build-depends:      base            >= 3
---    ,                 henet
+Test-suite server
+  default-language:   Haskell98
+  type:               exitcode-stdio-1.0
+  ghc-options:        -Wall -O2 -threaded
+  main-is:            Server.hs
+  hs-source-dirs:     test
+  build-depends:      base            >= 3
+    ,                 henet
+    ,                 network
+
+Test-suite client
+  default-language:   Haskell98
+  type:               exitcode-stdio-1.0
+  ghc-options:        -Wall -O2 -threaded
+  main-is:            Client.hs
+  hs-source-dirs:     test
+  build-depends:      base            >= 3
+    ,                 henet
+    ,                 network
 
 Library
   hs-source-dirs:     src
-  ghc-options:        -Wall
+  ghc-options:        -Wall -O2
   default-language:   Haskell98
   default-extensions: ForeignFunctionInterface
 
