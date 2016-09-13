@@ -1,8 +1,8 @@
 {-# LANGUAGE CPP, ForeignFunctionInterface, GeneralizedNewtypeDeriving #-}
-module Network.ENet.Bindings.List where
 
-import Foreign
-import Foreign.Storable()
+module Network.ENet.Bindings.List where
+import Foreign.Storable
+
 
 #include "enet/enet.h"
 

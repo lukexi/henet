@@ -92,12 +92,16 @@ Library
     ,                 Network.ENet.Host
     ,                 Network.ENet.Peer
     ,                 Network.ENet.Packet
-    ,                 Network.ENet.Bindings
-
-  other-modules:      Network.ENet.Internal
-    ,                 Network.ENet.Bindings.System
+    ,                 Network.ENet.Bindings.Address
     ,                 Network.ENet.Bindings.Callbacks
+    ,                 Network.ENet.Bindings.ENet
+    ,                 Network.ENet.Bindings.Event
+    ,                 Network.ENet.Bindings.Host
     ,                 Network.ENet.Bindings.List
+    ,                 Network.ENet.Bindings.Packet
+    ,                 Network.ENet.Bindings.Peer
+    ,                 Network.ENet.Bindings.RangeCoder
+    ,                 Network.ENet.Bindings.Socket
 
   c-sources:          enet/callbacks.c
     ,                 enet/compress.c

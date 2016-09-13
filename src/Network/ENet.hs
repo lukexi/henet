@@ -1,16 +1,22 @@
 {-# LANGUAGE ScopedTypeVariables #-}
-module Network.ENet where
+module Network.ENet
+    ( module Network.ENet
+    , module Exports
+    ) where
+
+import Network.ENet.Bindings.Address as Exports
+import Network.ENet.Bindings.Callbacks as Exports
+import Network.ENet.Bindings.ENet as Exports
+import Network.ENet.Bindings.Event as Exports
+import Network.ENet.Host as Exports
+import Network.ENet.Packet as Exports
+import Network.ENet.Peer as Exports
 
 import Control.Concurrent (runInBoundThread)
 
-import Data.ByteString (ByteString)
-import Data.Word (Word32)
-import Data.Bits ((.|.), (.&.))
 
+import qualified Network.ENet.Bindings.ENet as B
 import Foreign.C.Error
-
-import qualified Network.ENet.Bindings as B
-import qualified Data.Foldable as F 
 
 {-| Like 'withSocketsDo' from the network package. On windows it checks the
 version of Winsock, initializes it, and then after execution of the given
@@ -40,25 +46,7 @@ withENetDo x = runInBoundThread $ do
   _ <- throwErrnoIf
     (/=0)
     "ENet could not be initialized"
-    B.initialize
-  retVal <- x
-  B.deinitialize
-  return retVal
-
--- | Build from combining B.PacketFlag
-newtype PacketFlagSet = PacketFlagSet { unPacketFlagSet :: Word32 }
-
-makePacketFlagSet :: (F.Foldable t, Functor t) => (t B.PacketFlag) -> PacketFlagSet
-makePacketFlagSet = PacketFlagSet . F.foldl' (.|.) 0 . fmap (fromIntegral . fromEnum)
-
-unpackPacketFlagSet :: PacketFlagSet -> [B.PacketFlag]
-unpackPacketFlagSet (PacketFlagSet w) = filter ((/= 0) . (w .&.) . fromIntegral . fromEnum) [B.Reliable .. B.IsSent]
-
-emptyPacketFlagSet :: PacketFlagSet
-emptyPacketFlagSet = PacketFlagSet 0 
-
-instance Show PacketFlagSet where 
-  show = show . unpackPacketFlagSet
-
--- | A more high level notion of a packet than used by the basic Bindings
-data Packet = Packet PacketFlagSet ByteString
+    B.enetInitialize
+  result <- x
+  B.enetDeinitialize
+  return result

@@ -3,11 +3,8 @@ import Control.Monad
 import Control.Concurrent
 import Foreign.Ptr
 import Network.Socket (SockAddr(..), inet_addr)
+
 import Network.ENet
-import Network.ENet.Host
-import Network.ENet.Peer
-import Network.ENet.Bindings
-import Network.ENet.Packet
 
 main :: IO ()
 main = withENetDo $ do
@@ -17,7 +14,7 @@ main = withENetDo $ do
         numChannels = 2
         bandwidthIn = 0
         bandwidthOut = 0
-    clientPtr <- create address
+    Just clientPtr <- hostCreate address
         maxClients numChannels
         bandwidthIn bandwidthOut
 
@@ -26,19 +23,16 @@ main = withENetDo $ do
 
     let datum = 0
     localhost <- inet_addr "127.0.0.1"
-    peerPtr <- connect clientPtr (SockAddrInet 1234 localhost)
+    Just peerPtr <- hostConnect clientPtr (SockAddrInet 1234 localhost)
         numChannels datum
 
-    when (peerPtr == nullPtr) $
-        error "No available peers :("
-
-    maybeEvent <- service clientPtr 5000
+    maybeEvent <- hostService clientPtr 5000
     case maybeEvent of
-        Just (Event Connect peerPtr channelID packetLength packetPtr) -> do
+        Right (Just (Event Connect peerPtr channelID packetLength packetPtr)) -> do
             putStrLn "Connected!"
             print (Connect, peerPtr, channelID, packetLength, packetPtr)
         other -> do
-            reset peerPtr
+            peerReset peerPtr
             error "Failed to connect :("
 
 
@@ -46,14 +40,23 @@ main = withENetDo $ do
             (makePacketFlagSet [Reliable])
             "Hello from client"
 
-    send peerPtr (ChannelID 0)
-        =<< (poke packet)
     forever $ do
-        threadDelay 10000
-        putStrLn $ "Awaiting events..."
+        withPacket packet $
+            peerSend peerPtr (ChannelID 0)
+        --threadDelay 10000
+        --putStrLn $ "Awaiting events..."
         let maxWaitMillisec = 1000
-        maybeEvent <- service clientPtr maxWaitMillisec
+        maybeEvent <- hostService clientPtr maxWaitMillisec
         case maybeEvent of
-            Just (Event eventType peerPtr channelID packetLength packetPtr) ->
+            Right (Just (Event eventType peerPtr channelID packetLength packetPtr)) ->
                 print (eventType, peerPtr, channelID, packetLength, packetPtr)
-            Nothing -> putStrLn "No event"
+            Left anError -> putStrLn anError
+            _ -> return ()
+
+withPacket packet action = do
+    allocated <- packetPoke packet
+    r <- action allocated
+    --Packet.destroy allocated
+    return r
+
+

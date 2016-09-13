@@ -1,59 +1,53 @@
-module Network.ENet.Host where
+module Network.ENet.Host
+    ( module Network.ENet.Host
+    , module Exports
+    )
+    where
 
 import Foreign
-import Foreign.C.Error
 import Foreign.C.Types
 
 import Network.Socket(SockAddr)
 
-import Network.ENet.Internal
-import qualified Network.ENet.Bindings as B
+import Network.ENet.Bindings.Address
 
+import qualified Network.ENet.Bindings.Host as B
+import qualified Network.ENet.Bindings.Event as B
+import qualified Network.ENet.Bindings.Peer as B
+import Network.ENet.Bindings.Host as Exports hiding
+    (hostCreate, hostConnect, hostService, hostCheckEvents)
 
-create :: Maybe SockAddr -> CSize -> CSize -> Word32 -> Word32 -> IO (Ptr B.Host)
-create a c m i o  = withMaybeDo (fmap toENetAddress a) $ \a' -> B.hostCreate a' c m i o
+withMaybeToNull :: Storable a => Maybe a -> (Ptr a -> IO b) -> IO b
+withMaybeToNull (Just val) f = alloca $ \ptr -> poke ptr val >> f ptr
+withMaybeToNull Nothing    f = f nullPtr
 
-destroy :: Ptr B.Host -> IO ()
-destroy = B.hostDestroy
+hostCreate :: Maybe SockAddr -> CSize -> CSize -> Word32 -> Word32 -> IO (Maybe (Ptr B.Host))
+hostCreate maybeSockAddr numChannels maxClients inputBandwidth outputBandwidth = do
+    hostPtr <- withMaybeToNull (toENetAddress <$> maybeSockAddr) $ \addrPtr ->
+        B.hostCreate addrPtr numChannels maxClients
+            inputBandwidth outputBandwidth
+    return $ if hostPtr == nullPtr then Nothing else Just hostPtr
 
-connect :: Ptr B.Host -> SockAddr -> CSize -> Word32 -> IO (Ptr B.Peer)
-connect host address channelCount datum = alloca $ \addr -> do
+hostConnect :: Ptr B.Host -> SockAddr -> CSize -> Word32 -> IO (Maybe (Ptr B.Peer))
+hostConnect host address channelCount datum = alloca $ \addr -> do
   poke addr $ toENetAddress address
-  throwErrnoIf
-    (==nullPtr)
-    "could not connect to peer"
-    $ B.hostConnect host addr channelCount datum
+  result <- B.hostConnect host addr channelCount datum
+  return $ if result == nullPtr then Nothing else Just result
 
-checkEvents :: Ptr B.Host -> IO (Maybe B.Event)
-checkEvents host = alloca $ \ptr -> do
+hostCheckEvents :: Ptr B.Host -> IO (Either String (Maybe B.Event))
+hostCheckEvents host = alloca $ \ptr -> do
   status <- B.hostCheckEvents host ptr
   case compare status 0 of
-    GT -> fmap Just $ peek ptr
-    EQ -> return $ Nothing
-    LT -> throwErrno "error checking events"
+    GT -> Right . Just <$> peek ptr
+    EQ -> return $ Right Nothing
+    LT -> return $ Left "error checking events"
 
-service :: Ptr B.Host -> Word32 -> IO (Maybe B.Event)
-service host timeout = alloca $ \ptr -> do
+hostService :: Ptr B.Host -> Word32 -> IO (Either String (Maybe B.Event))
+hostService host timeout = alloca $ \ptr -> do
   status <- B.hostService host ptr timeout
   case compare status 0 of
-    GT -> fmap Just $ peek ptr
-    EQ -> return $ Nothing
-    LT -> throwErrno "error servicing events"
+    GT -> (Right . Just) <$> peek ptr
+    EQ -> return $ Right Nothing
+    LT -> return $ Left "error servicing events"
 
-flush :: Ptr B.Host -> IO ()
-flush = B.hostFlush
 
-broadcast :: Ptr B.Host -> B.ChannelID -> Ptr B.Packet -> IO ()
-broadcast = B.hostBroadcast
-
-compress :: Ptr B.Host -> Ptr B.Compressor -> IO ()
-compress = B.hostCompress
-
-compressWithRangeCoder :: Ptr B.Host -> IO CUInt
-compressWithRangeCoder = B.hostCompressWithRangeCoder
-
-channelLimit :: Ptr B.Host -> CSize -> IO ()
-channelLimit = B.hostChannelLimit
-
-hostBandwidthLimit :: Ptr B.Host -> Word32 -> Word32 -> IO ()
-hostBandwidthLimit = B.hostBandwidthLimit
