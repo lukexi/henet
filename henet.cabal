@@ -66,6 +66,7 @@ Test-suite server
     ,                 network
     ,                 binary
     ,                 bytestring
+    ,                 stm
 
 Test-suite client
   default-language:   Haskell98
@@ -78,6 +79,8 @@ Test-suite client
     ,                 henet
     ,                 network
     ,                 binary
+    ,                 bytestring
+    ,                 stm
 
 Library
   hs-source-dirs:     src
@@ -85,7 +88,7 @@ Library
   default-language:   Haskell98
   default-extensions: ForeignFunctionInterface
 
-  build-tools:        hsc2hs
+  -- build-tools:        hsc2hs
 
 
   build-depends:      base            >= 3 && < 5

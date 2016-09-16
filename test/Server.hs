@@ -5,11 +5,12 @@ import Network.Socket
 import Network.ENet
 
 import Shared
-import Data.ByteString (ByteString)
+import Data.Binary
 
 main :: IO ()
-main = startServer 1234 serverHostConfig $ \packet -> do
-    print packet
+main = startServer 1234 serverHostConfig $ \message -> do
+    print (message :: Message)
+    return ()
 
 serverHostConfig :: HostConfig
 serverHostConfig = HostConfig
@@ -19,26 +20,26 @@ serverHostConfig = HostConfig
     , hcBandwidthOut = 0
     }
 
-startServer :: PortNumber -> HostConfig -> (ByteString -> IO ()) -> IO a
-startServer port HostConfig{..} action = withENetDo $ do
-    let address = Just (SockAddrInet port iNADDR_ANY)
+startServer :: Binary a => PortNumber -> HostConfig -> (a -> IO ()) -> IO ()
+startServer port HostConfig{..} action = do
 
-    host <- fromJustNote "Couldn't create server." <$> hostCreate address
-        hcMaxClients hcNumChannels
-        hcBandwidthIn hcBandwidthOut
+    withENetDo $ do
+        let address = Just (SockAddrInet port iNADDR_ANY)
 
-    forever $ do
-        let maxWaitMillisec = 1
-        maybeEvent <- hostService host maxWaitMillisec
-        case maybeEvent of
-            Right (Just _event@(Event eventType _peer channelID _packetLength rawPacket)) -> do
-                --print event
-                --hostBroadcast host channelID rawPacket
-                case eventType of
-                    Receive -> do
-                        Packet _flags contents <- packetPeek rawPacket
-                        action contents
-                    _ -> return ()
-            Left anError -> do
-                putStrLn anError
-            _ -> return ()
+        host <- fromJustNote "Couldn't create server." <$> hostCreate address
+            hcMaxClients hcNumChannels
+            hcBandwidthIn hcBandwidthOut
+
+        void . forever $ do
+            let maxWaitMillisec = 1
+            maybeEvent <- hostService host maxWaitMillisec
+            case maybeEvent of
+                Right (Just event) -> do
+                    case evtType event of
+                        Receive -> do
+                            Packet _flags contents <- packetPeek (evtPacket event)
+                            action $! decodeStrict contents
+                        _ -> return ()
+                Left anError -> do
+                    putStrLn anError
+                _ -> return ()

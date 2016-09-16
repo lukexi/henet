@@ -3,7 +3,7 @@
 
 module Network.ENet.Bindings.Packet where
 
-import Foreign.Storable
+-- import Foreign.Storable
 import Foreign.C
 import Foreign.Ptr
 import Data.Word
