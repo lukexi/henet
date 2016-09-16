@@ -2,10 +2,8 @@
 module Network.ENet.Bindings.Host where
 
 import Foreign
-import Foreign.Storable
 import Foreign.C.Types
 
-import Network.ENet.Bindings.List
 import Network.ENet.Bindings.Peer
 import Network.ENet.Bindings.Address
 import Network.ENet.Bindings.Packet

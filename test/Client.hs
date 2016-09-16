@@ -1,38 +1,51 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
+
+--import Foreign.Ptr
+--import Control.Concurrent
 import Control.Monad
-import Control.Concurrent
-import Foreign.Ptr
-import Network.Socket (SockAddr(..), inet_addr)
+import Network.Socket (SockAddr(..), inet_addr, PortNumber)
 
 import Network.ENet
 
+import Shared
+
 main :: IO ()
-main = withENetDo $ do
-    let address = Nothing -- Nothing == Client
+main = startClient "127.0.0.1" 1234
 
-    let maxClients = 1
-        numChannels = 2
-        bandwidthIn = 0
-        bandwidthOut = 0
-    Just clientPtr <- hostCreate address
-        maxClients numChannels
-        bandwidthIn bandwidthOut
+clientHostConfig :: HostConfig
+clientHostConfig = HostConfig
+    { hcMaxClients = 1
+    , hcNumChannels = 2
+    , hcBandwidthIn = 0
+    , hcBandwidthOut = 0
+    }
 
-    when (clientPtr == nullPtr) $
-        error "Couldn't create client :("
+
+
+startClient :: String -> PortNumber -> IO ()
+startClient address port = withENetDo $ do
+    let noPublicAddress = Nothing -- Nothing == Client (address is for public connection)
+        HostConfig{..} = clientHostConfig
+
+    host <- fromJustNote "Couldn't create host :(" <$> hostCreate noPublicAddress
+        hcMaxClients hcNumChannels
+        hcBandwidthIn hcBandwidthOut
 
     let datum = 0
-    localhost <- inet_addr "127.0.0.1"
-    Just peerPtr <- hostConnect clientPtr (SockAddrInet 1234 localhost)
-        numChannels datum
+    addressBytes <- inet_addr address
+    serverPeer <- fromJustNote "Couldn't connect to host :(" <$> hostConnect host
+        (SockAddrInet port addressBytes)
+        hcNumChannels
+        datum
 
-    maybeEvent <- hostService clientPtr 5000
-    case maybeEvent of
-        Right (Just (Event Connect peerPtr channelID packetLength packetPtr)) -> do
+    maybeConnectionEvent <- hostService host 5000
+    case maybeConnectionEvent of
+        Right (Just (Event Connect peer channelID packetLength packetPtr)) -> do
             putStrLn "Connected!"
-            print (Connect, peerPtr, channelID, packetLength, packetPtr)
-        other -> do
-            peerReset peerPtr
+            print (Connect, peer, channelID, packetLength, packetPtr)
+        _other -> do
+            peerReset serverPeer
             error "Failed to connect :("
 
 
@@ -41,22 +54,12 @@ main = withENetDo $ do
             "Hello from client"
 
     forever $ do
-        withPacket packet $
-            peerSend peerPtr (ChannelID 0)
-        --threadDelay 10000
-        --putStrLn $ "Awaiting events..."
-        let maxWaitMillisec = 1000
-        maybeEvent <- hostService clientPtr maxWaitMillisec
+        peerSend serverPeer (ChannelID 0) =<< packetPoke packet
+        let maxWaitMillisec = 1
+        maybeEvent <- hostService host maxWaitMillisec
         case maybeEvent of
-            Right (Just (Event eventType peerPtr channelID packetLength packetPtr)) ->
-                print (eventType, peerPtr, channelID, packetLength, packetPtr)
+            Right (Just (Event eventType peer channelID packetLength packetPtr)) ->
+                print (eventType, peer, channelID, packetLength, packetPtr)
             Left anError -> putStrLn anError
             _ -> return ()
-
-withPacket packet action = do
-    allocated <- packetPoke packet
-    r <- action allocated
-    --Packet.destroy allocated
-    return r
-
 

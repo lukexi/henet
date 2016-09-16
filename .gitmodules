@@ -1,3 +1,6 @@
 [submodule "enet"]
 	path = enet
 	url = git@github.com:lsalzman/enet
+[submodule "submodules/binary-serialise-cbor"]
+	path = submodules/binary-serialise-cbor
+	url = git@github.com:well-typed/binary-serialise-cbor.git

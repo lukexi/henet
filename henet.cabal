@@ -41,8 +41,8 @@ Description:
 
 License-file:         enet/LICENSE
 License:              MIT
-Author:               John Ericson
-Maintainer:           Ericson2314@Yahoo.com
+Author:               John Ericson, Luke Iannini
+Maintainer:           lukexi@me.com
 Build-Type:           Simple
 Cabal-Version:        >=1.10
 Category:             Network, FFI
@@ -59,10 +59,13 @@ Test-suite server
   type:               exitcode-stdio-1.0
   ghc-options:        -Wall -O2 -threaded
   main-is:            Server.hs
+  other-modules:      Shared
   hs-source-dirs:     test
   build-depends:      base            >= 3
     ,                 henet
     ,                 network
+    ,                 binary
+    ,                 bytestring
 
 Test-suite client
   default-language:   Haskell98
@@ -70,9 +73,11 @@ Test-suite client
   ghc-options:        -Wall -O2 -threaded
   main-is:            Client.hs
   hs-source-dirs:     test
+  other-modules:      Shared
   build-depends:      base            >= 3
     ,                 henet
     ,                 network
+    ,                 binary
 
 Library
   hs-source-dirs:     src

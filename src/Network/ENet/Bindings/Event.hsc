@@ -40,6 +40,7 @@ data Event = Event
              ChannelID
              Word32 -- event data
              (Ptr Packet)
+    deriving Show
 
 instance Storable Event where
   sizeOf    _ = (#size ENetEvent)
