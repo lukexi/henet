@@ -2,7 +2,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE LambdaCase #-}
 
---import Foreign.Ptr
+import Foreign.Ptr
 import Control.Concurrent
 import Control.Concurrent.STM
 import Control.Monad
@@ -36,15 +36,22 @@ clientHostConfig = HostConfig
     , hcBandwidthOut = 0
     }
 
+reliablePacket :: Binary a => a -> Packet
 reliablePacket contents = encodePacket [Reliable] contents
 
+encodePacket :: (Binary a, Foldable t, Functor t)
+             => t PacketFlag -> a -> Packet
 encodePacket flags contents = Packet
     (makePacketFlagSet flags) (encodeStrict contents)
 
+createHostWithConfig :: HostConfig
+                     -> Maybe SockAddr -> IO (Maybe (Ptr Host))
 createHostWithConfig HostConfig{..} address = hostCreate address
     hcMaxClients hcNumChannels
     hcBandwidthIn hcBandwidthOut
 
+connectToHost :: HostConfig
+              -> Ptr Host -> String -> PortNumber -> IO (Maybe (Ptr Peer))
 connectToHost hostConfig host address port = do
     sockAddress <- SockAddrInet port <$> inet_addr address
     hostConnect host
@@ -53,6 +60,7 @@ connectToHost hostConfig host address port = do
         datum
     where datum = 0
 
+awaitConnection :: Ptr Host -> Ptr Peer -> Word32 -> IO ()
 awaitConnection host peer maxTime = do
 
     maybeConnectionEvent <- hostService host maxTime
@@ -73,7 +81,7 @@ startClient address port = do
     outgoingChan <- newTChanIO
     incomingChan <- newTChanIO
 
-    forkOS $ withENetDo $ do
+    _clientThread <- forkOS $ withENetDo $ do
 
         -- Create the host
         let noPublicAddress = Nothing -- Nothing == Client (address is for public connection)
