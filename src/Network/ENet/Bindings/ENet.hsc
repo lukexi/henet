@@ -1,6 +1,5 @@
 module Network.ENet.Bindings.ENet where
 
-import Foreign.Storable
 import Foreign.C
 import Foreign.Ptr
 import Data.Word
