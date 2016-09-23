@@ -48,6 +48,7 @@ Cabal-Version:        >=1.10
 Category:             Network, FFI
 
 Extra-source-files:   enet/include/enet/*.h
+                      cbits/extra.h
 
 Bug-reports:          https://github.com/Ericson2314/henet/issues
 Source-repository head
@@ -118,10 +119,12 @@ Library
     ,                 enet/packet.c
     ,                 enet/peer.c
     ,                 enet/protocol.c
+    ,                 cbits/extra.c
 
 
   include-dirs:       enet
     ,                 enet/include
+    ,                 cbits
 
   cc-options:         -g
   ld-options:         -g

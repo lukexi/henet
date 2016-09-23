@@ -10,6 +10,7 @@ import Network.ENet.Bindings.Packet
 import Network.ENet.Bindings.Event
 
 #include "enet/enet.h"
+#include "extra.h"
 
 data Host
 
@@ -36,3 +37,6 @@ foreign import ccall unsafe "enet.h enet_host_channel_limit"             hostCha
 foreign import ccall unsafe "enet.h enet_host_bandwidth_limit"           hostBandwidthLimit
   :: Ptr Host -> Word32 -> Word32 -> IO ()
 
+
+foreign import ccall unsafe "extra.h enet_host_broadcast_except"         hostBroadcastExcept
+  :: Ptr Host -> Ptr Peer -> ChannelID -> Ptr Packet -> IO ()
